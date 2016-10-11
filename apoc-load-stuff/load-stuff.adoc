@@ -1,0 +1,17 @@
+= Loading Data With Apoc
+
+== Loading Data With APOC
+
+//image::{img}/meetup.png[float=right]
+
+. pass:a[<a play-topic='{guides}/loadnorthwind.html'>Load Northwind (RDBMS JDBC)</a>]
+. pass:a[<a play-topic='{guides}/loadso.html'>Load StackOverflow (Load JSON)</a>]
+. pass:a[<a play-topic='{guides}/loadtwitter.html'>Load Twitter (JSON, job scheduling)</a>]
+
+== Further Resources
+
+* http://neo4j.com/graphgists[Graph Gist Examples]
+* http://neo4j.com/docs/cypher-refcard/current/[Cypher Reference Card]
+* http://neo4j.com/docs/developer-manual/current/#cypher-query-lang[Neo4j Developer Manual]
+* http://neo4j.com/developer/resources#_neo4j_cypher_resources[Cypher Resource Collection]
+* http://graphdatabases.com[e-book: Graph Databases (free)]

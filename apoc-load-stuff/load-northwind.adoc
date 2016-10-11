@@ -1,0 +1,75 @@
+= Load Northwind Graph
+
+== Load Northwind Graph
+
+
+[source,cypher]
+----
+// Register JDBC driver
+CALL apoc.load.driver("com.mysql.jdbc.Driver");
+----
+
+[source,cypher]
+----
+// Create Product nodes
+CALL apoc.load.jdbc("jdbc:mysql://localhost:3306/northwind?user=root","products") YIELD row
+CREATE (p:Product {ProductID: row.ProductID})
+SET p.ProductName = row.ProductName,
+    p.CategoryID  = row.CategoryID,
+    p.SupplierID  = row.SupplierID
+----
+
+[source,cypher]
+----
+// Create Order nodes
+CALL apoc.load.jdbc("jdbc:mysql://localhost:3306/northwind?user=root","orders") YIELD row
+CREATE (o:Order {OrderID: row.OrderID})
+SET o.CustomerID = row.CustomerID,
+    o.EmployeeID = row.EmployeeID
+----
+
+[source,cypher]
+----
+// Create CONTAINS relationships
+CALL apoc.load.jdbc("jdbc:mysql://localhost:3306/northwind?user=root","OrderDetails") YIELD row
+MATCH (p:Product {ProductID: row.ProductID})
+MATCH (o:Order {OrderID: row.OrderID})
+CREATE (o)-[r:CONTAINS]->(p)
+//SET r.UnitPrice = row.UnitPrice
+    //r.Quantity  = row.Quantity,
+    //r.Discount  = row.Discount
+----
+
+[source,cypher]
+----
+// Create Customer nodes
+CALL apoc.load.jdbc("jdbc:mysql://localhost:3306/northwind?user=root","Customers") YIELD row
+CREATE (c:Customer {CustomerID: row.CustomerID})
+SET c.Companyname  = row.CompanyName,
+    c.ContactName  = row.ContactName,
+    c.ContactTitle = row.ContactTitle
+----
+
+[source,cypher]
+----
+// create PLACED relationships
+MATCH (o:Order)
+MATCH (c:Customer {CustomerID: o.CustomerID})
+CREATE (c)-[:PLACED]->(o)
+----
+
+== Querying the graph
+
+INSERT SOME INTERESTING QUERIES
+
+== Product Recommendations on Northwind
+
+[source,cypher]
+----
+// simple collaborative filtering product recommendations
+MATCH (c:Customer) WHERE c.ContactName = "Roland Mendel"
+MATCH (c)-[:PLACED]->(o:Order)-[:CONTAINS]->(p:Product)
+MATCH (p)<-[:CONTAINS]-(:Order)<-[:PLACED]-(other:Customer)
+MATCH (other)-[:PLACED]->(:Order)-[:CONTAINS]->(p2:Product)
+RETURN p2.ProductName, count(*) AS weight ORDER BY weight DESC
+----
