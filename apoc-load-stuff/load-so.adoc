@@ -1,5 +1,27 @@
 = Load StackOverflow
 
+== Create Constraints and Indexes
+
+[source,cypher]
+----
+create constraint on (t:Tag) assert t.tagId is unique;
+----
+
+[source,cypher]
+----
+create constraint on (u:User) assert u.userId is unique;
+----
+
+[source,cypher]
+----
+create constraint on (p:Post) assert p.postId is unique;
+----
+
+[source,cypher]
+----
+create index on :User(name);
+----
+
 == Load StackOverflow
 
 [source,cypher,subs=attributes]
@@ -20,3 +42,50 @@ FOREACH (a IN q.answers |
    MERGE (answer)<-[:PROVIDED]-(answerer)
 )
 ----
+
+== Analyzing The Graph
+
+Top 10 Stack Overflow Users
+
+[source,cypher]
+----
+match (u:User)
+with u,size( (u)-[:POSTED]->()) as posts order by posts desc limit 10
+return u.name, posts;
+----
+
+The Top 5 Tags Used in Asking Questions
+
+[source,cypher]
+----
+match (u:User)-[:POSTED]->()-[:HAS_TAG]->(t:Tag)
+where u.name = "Jon Skeet"
+return t,count(*) as posts order by posts desc limit 5;
+----
+
+Are We Connected?
+
+[source,cypher]
+----
+MATCH path = allShortestPaths(
+     (u:User {name:"Darin Dimitrov"})-[*]-(me:User {name:"Michael Hunger"}))
+RETURN path;
+----
+
+Tag Co-occurence
+
+[source,cypher]
+----
+match (t:Tag {tagId:"javascript"})<-[:HAS_TAG]-()-[:HAS_TAG]->(other:Tag)
+WITH other, count(*) as freq order by freq desc limit 5
+RETURN other.tagId,freq;
+----
+
+== Graph Algorithms
+
+=== Centrality
+
+=== Clustering
+
+
+
