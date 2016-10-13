@@ -2,9 +2,13 @@
 
 == Network Analysis With Neo4j Graph Algorithms
 
-// Add some content about
+image::{img}/lg_datamodel.png[float=right]
 
-.
+* Centralities
+* Clustering
+* Triadic closures and inferred relationships
+*
+* Global graph algorithms with APOC
 
 
 == US Congress As A Graph
@@ -77,7 +81,7 @@ Degree centrality is the number of relationships connected to a specific node. I
 [source,cypher]
 ----
 MATCH (l:Legislator)
-RETURN l, size ((l)<-[:COSPONSORED]-()) AS degree ORDER BY degree DESC
+RETURN l, size ((l)<-[:COSPONSORED]-()) AS degree ORDER BY degree DESC LIMIT 25
 ----
 
 === Weighted Degree Centrality
@@ -117,7 +121,7 @@ MATCH (l:Legislator)
 WITH collect(l) AS legislators
 CALL apoc.algo.betweenness(['COSPONSORED'], legislators, 'OUTGOING') YIELD node, score
 SET node.betweenness = score
-RETURN node.name AS name, score ORDER BY score DESC
+RETURN node AS legislator, score ORDER BY score DESC LIMIT 25
 ----
 
 
@@ -135,7 +139,7 @@ image::http://www.lyonwj.com/public/img/closeness-centrality.png[]
 MATCH (l:Legislator)
 WITH collect(l) AS legislators
 CALL apoc.algo.closeness(['COSPONSORED'], legislators, 'OUTGOING') YIELD node, score
-RETURN node.name AS name, score ORDER BY score DESC
+RETURN node AS legislator, score ORDER BY score DESC LIMIT 25
 ----
 
 
@@ -152,13 +156,31 @@ CALL apoc.algo.pageRank(ls) YIELD node, score
 RETURN node, score ORDER BY score DESC LIMIT 10
 ----
 
-== PageRank (Eigenvector centrality)
+== PageRank - Inferred Relationships
 
 // TODO: insert image from wikipedia
 
+=== Inferred Relationships and Political Influence
+
+The main sponsor of a bill can be said to have demonstrated political influence over cosponsors:
+
 [source,cypher]
 ----
-CALL apoc.algo.pageRankWithCypher({iterations:20, write:true, rel_cypher:'MATCH (b:Bill)-[r:SPONSORED_BY]->(sponsor:Legislator)
+MATCH (b:Bill)-[r:SPONSORED_BY]->(sponsor:Legislator)
+WHERE r.cosponsor = "0"
+MATCH (b)-[s:SPONSORED_BY]->(cosponsor:Legislator)
+WHERE s.cosponsor = "1"
+RETURN id(sponsor) AS source, id(cosponsor) AS target, count(*) AS weight ORDER BY weight DESC
+----
+
+
+=== PageRank On Inferred Relationships
+
+We can run PageRank using inferred relationships without actually persisting these to the graph:
+
+[source,cypher]
+----
+CALL apoc.algo.pageRankWithCypher({iterations:20, write:true, node_cypher: 'MATCH (l:Legislator) RETURN id(l) AS id', rel_cypher:'MATCH (b:Bill)-[r:SPONSORED_BY]->(sponsor:Legislator)
 WHERE r.cosponsor = "0"
 MATCH (b)-[s:SPONSORED_BY]->(cosponsor:Legislator)
 WHERE s.cosponsor = "1"
@@ -170,13 +192,10 @@ RETURN id(sponsor) AS source, id(cosponsor) AS target, count(*) AS weight ORDER 
 
 [source,cypher]
 ----
-MATCH (l:Legislator) WHERE has(l.pagerank) WITH l, l.pagerank as pg
-MATCH (l)<-[:SPONSORED_BY)-[:Bill)-[d:DEALS_WITH]->(s:Subject)
+MATCH (l:Legislator)<-[:SPONSORED_BY]-(:Bill)-[d:DEALS_WITH]->(s:Subject)
 WHERE s.title CONTAINS "Technology"
 MATCH (l)-[:IS_MEMBER_OF]->(p:Party)
-WITH l.firstName + " " + l.lastName as name, pg, c.name AS committee,
-   r.rank as rank, p.name as party
-RETURN name, pg, committee, rank, party ORDER BY pg DESC LIMIT 10;
+RETURN l, COUNT(*) AS num ORDER BY l.pagerank DESC LIMIT 10
 ----
 
 
@@ -185,6 +204,8 @@ RETURN name, pg, committee, rank, party ORDER BY pg DESC LIMIT 10;
 image::http://www.lyonwj.com/public/img/community-1.png[]
 
 .Community detection algorithms seek to minimize **modularity**, the ratio of the number of relationships across clusters to thhe number of relationships within cluster.
+
+== Community Detection In Congress
 
 First we'll need to filter on only members of the Senate or House, since we won't see bill sponsorhips across bodies.
 
@@ -205,7 +226,7 @@ Now let's see what clusters we've found:
 
 [source,cypher]
 ----
-MATCH (l:Legislator)
+MATCH (l:Rep) WHERE exists(l.partition)
 RETURN l.partition, COUNT(*) AS num
 ORDER BY num DESC
 ----
@@ -217,6 +238,14 @@ How do these clusters break across party lines?
 MATCH (l:Rep)
 RETURN l.partition, l.party, COUNT(*) AS num
 ----
+
+== Visualization
+
+image::{img}/community_viz.png[]
+
+* Node size determined by betweenness centrality `:Legislator(betweenness)`
+* Color determined by cluster `:Legislator(partitiion)`
+* Relationship thickness determined by cospnosor weight
 
 
 //== Visualization
