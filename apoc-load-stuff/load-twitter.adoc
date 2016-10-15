@@ -2,7 +2,7 @@
 
 == Import Twitter Data
 
-We can
+We can import data directly from Web APIs using APOC. In addition to loading JSON we can add authorization headers to work with Web APIs.
 
 == Querying Twitter Search API
 

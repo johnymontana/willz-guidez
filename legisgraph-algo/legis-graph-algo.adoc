@@ -170,13 +170,21 @@ MATCH (b:Bill)-[r:SPONSORED_BY]->(sponsor:Legislator)
 WHERE r.cosponsor = "0"
 MATCH (b)-[s:SPONSORED_BY]->(cosponsor:Legislator)
 WHERE s.cosponsor = "1"
-RETURN id(sponsor) AS source, id(cosponsor) AS target, count(*) AS weight ORDER BY weight DESC
+RETURN id(sponsor) AS source, id(cosponsor) AS target, count(*) AS weight ORDER BY weight DESC 25
 ----
 
 
 === PageRank On Inferred Relationships
 
 We can run PageRank using inferred relationships without actually persisting these to the graph:
+
+//So let's remove all the `COSPONSORED` relatiionships:
+//
+//[source,cypher]
+//----
+//MATCH ()-[r:COSPONSORED]-()
+//DELETE r
+//----
 
 [source,cypher]
 ----
